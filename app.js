@@ -3,8 +3,11 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var session = require('express-session')
+var MongoStore = require('connect-mongo')(session)
 
 var routes = require('./routes/index')
+var settings = require('./settings')
 
 var app = express();
 
@@ -35,5 +38,17 @@ app.use(function(err, req, res, next) {
   res.status(err.status || 500);
   res.render('error');
 });
+
+app.use(session({
+  secret: settings.cookieSecret,
+  key: settings.db, // cookie name
+  cookie: {maxAge: 1000 * 60 * 60 * 24 * 30}, // 30 days
+  store: new MongoStore({
+    db: settings.db,
+    host: settings.host,
+    port: settings.port,
+    url: 'mongodb://localhost/blog'
+  })
+}))
 
 module.exports = app;

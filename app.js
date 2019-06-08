@@ -34,7 +34,7 @@ app.use(session({
   })
 }))
 
-app.use(flash())
+app.use(flash()) // flash 依赖 session，所以必须放在session的引入之后
 
 routes(app)
 

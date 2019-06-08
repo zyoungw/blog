@@ -7,10 +7,20 @@ var crypto = require('crypto'),  // nodejs的一个核心模块，可以用它�
 module.exports = function (app) {
   /* GET home page. */
   app.get('/', function(req, res, next) {
-    res.render('index', { title: '主页' });
+    res.render('index', {
+      title: '主页',
+      user: req.session.user,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    });
   });
   app.get('/reg', function(req, res, next) {
-    res.render('reg', { title: '注册' });
+    res.render('reg', {
+      title: '注册',
+      user: req.session.user,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    });
   });
   app.post('/reg', function(req, res) {
     var name = req.body.name,
@@ -19,7 +29,7 @@ module.exports = function (app) {
     // 校验用户两次输入的密码是否一致
     if (password_re != password) {
       req.flash('error', '两次输入的密码不一致！')
-      return res.direct('/reg') // 返回注册页
+      return res.redirect('/reg') // 返回注册页
     }
     // 生成密码的md5值
     var md5 = crypto.createHash('md5')
@@ -45,6 +55,7 @@ module.exports = function (app) {
           req.flash('error', err)
           return res.redirect('/reg') // 注册失败！返回注册页
         }
+        req.flash('success', '注册成功！')
         req.session.user = user // 用户信息存入 session
         res.redirect('/') // 注册成功后返回主页
       })

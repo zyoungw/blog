@@ -188,7 +188,7 @@ module.exports = function (app) {
       })
     })
   })
-  // 编辑和删除
+  // 编辑
   app.get('/edit/:name/:day/:title', checkLogin)
   app.get('/edit/:name/:day/:title', function (req, res) {
     var currentUser = req.session.user
@@ -217,6 +217,19 @@ module.exports = function (app) {
       }
       req.flash('success', '修改成功！')
       res.redirect(url) // 成功， 返回文章页    
+    })
+  })
+  // 删除
+  app.get('/remove/:name/:day/:title', checkLogin)
+  app.get('/remove/:name/:day/:title', function (req, res) {
+    var currentUser = req.session.user
+    Post.remove(currentUser.name, req.params.day, req.params.title, function (err) {
+      if (err) {
+        req.flash('error', err)
+        return res.redirect('back')
+      }
+      req.flash('success', '删除成功')
+      res.redirect('/')
     })
   })
   // 登录检测

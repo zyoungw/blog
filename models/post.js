@@ -170,4 +170,33 @@ Post.update = function (name, day, title, post, callback) {
     }) 
   })
 }
+// 删除一片文章
+Post.remove = function (name, day, title, callback) {
+  mogondb.open(function (err, db) {
+    if (err) {
+      return callback(err)
+    }
+    // 读取posts集合
+    db.collection('posts', function (err, collection) {
+      if (err) {
+        mogondb.close()
+        return callback(err)
+      }
+      // 根据用户名、日期和标题查找并删除一篇文章
+      collection.remove({
+        name,
+        title,
+        "time.day": day
+      }, {
+        w: 1
+      }, function (err) {
+        mogondb.close()
+        if (err) {
+          return callback(err)
+        }
+        callback(null)
+      })
+    })
+  })
+}
 

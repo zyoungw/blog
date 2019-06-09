@@ -13,8 +13,9 @@ module.exports = function (app) {
       success: req.flash('success').toString(),
       error: req.flash('error').toString()
     });
-  });
-  
+  })
+  // 注册
+  app.get('/reg', checkNotLogin)
   app.get('/reg', function(req, res, next) {
     res.render('reg', {
       title: '注册',
@@ -23,7 +24,7 @@ module.exports = function (app) {
       error: req.flash('error').toString()
     });
   });
-  
+  app.post('/reg', checkNotLogin)
   app.post('/reg', function(req, res) {
     var name = req.body.name,
         password = req.body.password,
@@ -63,11 +64,17 @@ module.exports = function (app) {
       })
     })
   });
-  
+  // 登录
+  app.get('/login', checkNotLogin);
   app.get('/login', function(req, res, next) {
-    res.render('login', { title: '登录' });
+    res.render('login', {
+      title: '登录',
+      user: req.session.user,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    });
   });
-
+  app.post('/login', checkNotLogin);
   app.post('/login', function(req, res) {
     // 生成密码的 md5 值
     var md5 = crypto.createHash('md5'),
@@ -88,18 +95,40 @@ module.exports = function (app) {
       res.redirect('/') // 登录成功后跳转到主页
     })
   });
-
+  // 发表
+  app.get('/post', checkLogin)
   app.get('/post', function(req, res, next) {
-    res.render('post', { title: '发表' });
+    res.render('post', {
+      title: '发表',
+      user: req.session.user,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    });
   });
-
+  app.post('/post', checkLogin)
   app.post('/post', function(req, res) {
   });
-  
+  // 登出
+  app.get('/logout', checkLogin)
   app.get('/logout', function(req, res, next) {
     // res.render('logout', { title: '发表' });
     req.session.user = null
     req.flash('success', '登出成功！')
     res.redirect('/') // 登出成功后跳转到主页
   });
+  // 登录检测
+  function checkLogin(req, res, next) {
+    if (!req.session.user) {
+      req.flash('error', '未登录！')
+      res.redirect('/login')
+    }
+    next()
+  }
+  function checkNotLogin(req, res, next) {
+    if (req.session.user) {
+      req.flash('error', '已登录！')
+      res.redirect('back')
+    }
+    next()
+  }
 }

@@ -188,6 +188,22 @@ module.exports = function (app) {
       })
     })
   })
+  // 存档
+  app.get('/archive', (req, res) => {
+    Post.getArchive((err, posts) => {
+      if (err) {
+        req.flash('error', err)
+        return res.redirect('/')
+      }
+      res.render('archive', {
+        title: '存档',
+        posts,
+        user: req.session.user,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString()
+      })
+    })
+  })
   app.get('/u/:name/:day/:title', function (req, res) {
     Post.getOne(req.params.name, req.params.day, req.params.title, function (err, post) {
       if (err) {

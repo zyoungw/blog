@@ -22,7 +22,7 @@ Post.prototype.save = function (callback) {
   var post = {
     name: this.name,
     time: time,
-    title: this.title,
+    title: this.title.trim(), // 去除首尾空格，避免数据库查询不到title带空格的数据
     post: this.post
   }
   // 打开数据库
@@ -129,7 +129,7 @@ Post.edit = function (name, day, title, callback) {
       collection.findOne({
         name,
         "time.day": day,
-        title
+        title: title.trim() // 去除首尾空格，避免数据库查询不到title带空格的数据
       }, (err, doc) => {
         mogondb.close()
         if (err) {

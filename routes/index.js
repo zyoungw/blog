@@ -118,7 +118,6 @@ module.exports = function (app) {
         post = new Post(currentUser.name, req.body.title, req.body.post);
     // console.log(req, currentUser, post)
     post.save(function (err) {
-      console.log(77)
       if (err) {
         req.flash('error', err)
         return res.redirect('/')

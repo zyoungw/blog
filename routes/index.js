@@ -9,7 +9,10 @@ var crypto = require('crypto'),  // nodejs的一个核心模块，可以用它�
 module.exports = function (app) {
   /* GET home page. */
   app.get('/', function(req, res, next) {
-    Post.getAll(null, function (err, posts) {
+    // 判断是否为第一页，并把请求的椰树转化成 number 类型
+    var page = req.query.p ? parseInt(req.query.p) : 1
+    // 查询并返回第 page 页的10篇文章
+    Post.getTen(null, page, (err, posts, total) => {
       if (err) {
         posts = []
       }
@@ -18,7 +21,10 @@ module.exports = function (app) {
         user: req.session.user,
         success: req.flash('success').toString(),
         error: req.flash('error').toString(),
-        posts: posts
+        posts: posts,
+        page,
+        isFirstPage: (page - 1) == 0,
+        isLastPage: ((page - 1) * 10 + posts.length) == total
       })
     })
   })
@@ -159,16 +165,32 @@ module.exports = function (app) {
       } 
       // 查询并返回该用户的所有文章
       Post.getAll(user.name, function (err, posts) {
-        if (err) {
-          req.flash('error', err)
-          return res.redirect('/')
-        }
-        res.render('user', {
-          title: user.name,
-          user: req.session.user,
-          posts: posts,
-          success: req.flash('success').toString(),
-          error: req.flash('error').toString()
+        // 判断是否为第一页，并把请求的椰树转化成 number 类型
+        var page = req.query.p ? parseInt(req.query.p) : 1
+        // 检查用户是否存在
+        User.get(req.params.name, (err, user) => {
+          if (!user) {
+            req.flash('error', '用户不存在！')
+            return res.redirect('/')
+          }
+          // 查询并返回第 page 页的10篇文章
+          Post.getTen(user.name, page, (err, posts, total) => {
+            if (err) {
+              // posts = []
+              req.flash('error', err)
+              return res.redirect('/')
+            }
+            res.render('index', {
+              title: user,name,
+              user: req.session.user,
+              success: req.flash('success').toString(),
+              error: req.flash('error').toString(),
+              posts,
+              page,
+              isFirstPage: (page - 1) == 0,
+              isLastPage: ((page - 1) * 10 + posts.length) == total
+            })
+          })
         })
       })
     })

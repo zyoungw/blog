@@ -50,8 +50,8 @@ Post.prototype.save = function (callback) {
     })
   })
 }
-// 获取一个人的所有文章
-Post.getAll = function (name, callback) {
+// 一次获取10篇文章
+Post.getTen = function (name, page, callback) {
   // 打开数据库
   mogondb.open(function (err, db) {
     if (err) {
@@ -67,18 +67,25 @@ Post.getAll = function (name, callback) {
       if (name) {
         query.name = name
       }
-      // 根据query对象查询文章
-      collection.find(query).sort({
-        time: -1
-      }).toArray(function (err, docs) {
-        mogondb.close()
-        if (err) {
-          return callback(err) // 失败！返回err
-        }
-        docs.forEach(doc => {
-          doc.post = markdown.toHTML(doc.post)
+      // 使用count返回特定查询的文档数total
+      collection.count(query, (err, total) => {
+        // 根据query对象查询，并跳过前(page - 1)*10个结果,返回之后的10个结果
+        collection.find(query, {
+          skip: (page - 1) * 10,
+          limit: 10
+        }).sort({
+          time: -1
+        }).toArray((err, docs) => {
+          mogondb.close()
+          if (err) {
+            return callback(err)
+          }
+          // 解析 markdown 为 html 
+          docs.forEach(doc => {
+            doc.post = markdown.toHTML(doc.post)
+          })
+          callback(null, docs, total)
         })
-        callback(null, docs) // 成功，以数组形式返回查询单的结果
       })
     })
   })

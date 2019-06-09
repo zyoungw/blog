@@ -2,17 +2,24 @@
 // var router = express.Router();
 
 var crypto = require('crypto'),  // nodejs的一个核心模块，可以用它来生成散列值来加密密码
-    User = require('../models/user.js');
+    User = require('../models/user.js'),
+    Post = require('../models/post.js');
 
 module.exports = function (app) {
   /* GET home page. */
   app.get('/', function(req, res, next) {
-    res.render('index', {
-      title: '主页',
-      user: req.session.user,
-      success: req.flash('success').toString(),
-      error: req.flash('error').toString()
-    });
+    Post.get(null, function (err, posts) {
+      if (err) {
+        posts = []
+      }
+      res.render('index', {
+        title: '主页',
+        user: req.session.user,
+        success: req.flash('success').toString(),
+        error: req.flash('error').toString(),
+        posts: posts
+      })
+    })
   })
   // 注册
   app.get('/reg', checkNotLogin)
@@ -104,9 +111,21 @@ module.exports = function (app) {
       success: req.flash('success').toString(),
       error: req.flash('error').toString()
     });
-  });
+  })
   app.post('/post', checkLogin)
-  app.post('/post', function(req, res) {
+  app.post('/post', function(req, res, next) {
+    var currentUser = req.session.user,
+        post = new Post(currentUser.name, req.body.title, req.body.post);
+    // console.log(req, currentUser, post)
+    post.save(function (err) {
+      console.log(77)
+      if (err) {
+        req.flash('error', err)
+        return res.redirect('/')
+      }
+      req.flash('success', '发布成功！')
+      res.redirect('/') // 发表成功跳转到主页
+    })
   });
   // 登出
   app.get('/logout', checkLogin)

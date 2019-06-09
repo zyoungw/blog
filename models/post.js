@@ -23,7 +23,8 @@ Post.prototype.save = function (callback) {
     name: this.name,
     time: time,
     title: this.title.trim(), // 去除首尾空格，避免数据库查询不到title带空格的数据
-    post: this.post
+    post: this.post,
+    comments: []
   }
   // 打开数据库
   mogondb.open(function (err, db) {
@@ -106,7 +107,13 @@ Post.getOne = function (name, day, title, callback) {
           return callback(err) // 失败！返回err
         }
         // 解析markdown 为html
-        doc.post = markdown.toHTML(doc.post)
+        // doc.post = markdown.toHTML(doc.post)
+        if (doc) {
+          doc.post = markdown.toHTML(doc.post)
+          doc.comments.forEach(comment => {
+            comment.content = markdown.toHTML(comment.content)
+          });
+        }
         callback(null, doc)
       })
     })

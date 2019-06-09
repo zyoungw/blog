@@ -135,6 +135,21 @@ module.exports = function (app) {
     req.flash('success', '登出成功！')
     res.redirect('/') // 登出成功后跳转到主页
   });
+  // 上传图片
+  app.get('/upload', checkLogin)
+  app.get('/upload', function (req, res) {
+    res.render('upload', {
+      title: '文件上传',
+      user: req.session.user,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    })
+  })
+  app.post('/upload', checkLogin)
+  app.post('/upload', function (req, res) {
+    req.flash('success', '文件上传成功')
+    res.redirect('/upload')
+  })
   // 登录检测
   function checkLogin(req, res, next) {
     if (!req.session.user) {

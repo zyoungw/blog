@@ -9,6 +9,7 @@ var MongoStore = require('connect-mongo')(session)
 var routes = require('./routes/index')
 var settings = require('./settings')
 var flash = require('connect-flash')
+var multer = require('multer')
 
 var app = express();
 
@@ -21,6 +22,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(multer({
+  dest: './public/images',
+  rename: function (fieldname, fieldname) {
+    return fieldname
+  }
+}))
 
 app.use(session({
   secret: settings.cookieSecret,

@@ -12,17 +12,31 @@ var flash = require('connect-flash')
 var multer = require('multer')
 
 var app = express();
+var fs = require('fs')
+var accessLog = fs.createWriteStream('access.log', {
+  flag: 'a'
+})
+var errorLog = fs.createWriteStream('error.log', {
+  flags: 'a'
+})
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
 app.use(logger('dev'));
+app.use(logger({
+  stream: accessLog
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-
+app.use(function (err, req, res, next) {
+  var meta = `[${new Date()}]${req.url}\n`
+  errorLog.write(meta + err.stack + '\n')
+  next()
+})
 app.use(multer({
   dest: './public/images',
   rename: function (fieldname, fieldname) {

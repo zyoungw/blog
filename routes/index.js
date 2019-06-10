@@ -5,6 +5,7 @@ var crypto = require('crypto'),  // nodejs的一个核心模块，可以用它�
     User = require('../models/user.js'),
     Post = require('../models/post.js'),
     Comment = require('../models/comment.js');
+var passport = require('passport')
 
 module.exports = function (app) {
   /* GET home page. */
@@ -88,6 +89,20 @@ module.exports = function (app) {
       error: req.flash('error').toString()
     });
   });
+  app.get("/login/github", passport.authenticate("github", {session: false}))
+  app.get("/login/github/callback", passport.authenticate("github", {
+    session: false,
+    failureRedirect: '/login',
+    successFlash: '登陆成功?'
+  }), (req, res) => {
+    console.log(req.user)
+    req.session.user = {
+      name: req.user.username,
+      head: `https://gravatar.com/avartar/${req.user._json.gravatar_id}?s=48`
+    }
+    res.redirect('/')
+    
+  })
   app.post('/login', checkNotLogin);
   app.post('/login', function(req, res) {
     // 生成密码的 md5 值

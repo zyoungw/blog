@@ -1,5 +1,8 @@
 var createError = require('http-errors');
 var express = require('express');
+var passport = require('passport');
+var GithubStrategy = require('passport-github').Strategy;
+
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -58,12 +61,22 @@ app.use(session({
 
 app.use(flash()) // flash 依赖 session，所以必须放在session的引入之后
 
+app.use(passport.initialize()) // 初始化 Passport
+
 routes(app)
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
 });
+
+passport.use(new GithubStrategy({
+  clientID: "41d94a44ffbd250ca435",
+  clientSecret: "8b2c1e6dbed9fe524bc8d8696b93b6df7b72357f",
+  callbackURL: "http://localhost:3000/login/github/callback",
+}, (accessToken, refreshToken, profile, done) => {
+  done(null, profile)
+}))
 
 // error handler
 app.use(function(err, req, res, next) {

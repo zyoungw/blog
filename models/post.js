@@ -1,11 +1,12 @@
 var mogondb = require('./db')
 markdown = require('markdown').markdown
 
-function Post ( name, title, tags , post ) {
+function Post ( name, head, title, tags , post ) {
   this.name = name
   this.title = title
   this.post = post
   this.tags = tags
+  this.head = head
 }
 
 
@@ -28,7 +29,8 @@ Post.prototype.save = function (callback) {
     post: this.post,
     tags: this.tags,
     comments: [],
-    pv: 0
+    pv: 0,
+    head: this.head
   }
   // 打开数据库
   mogondb.open(function (err, db) {

@@ -24,13 +24,14 @@ Post.prototype.save = function (callback) {
   // 要存入数据库的文档
   var post = {
     name: this.name,
-    time: time,
+    time,
     title: this.title.trim(), // 去除首尾空格，避免数据库查询不到title带空格的数据
     post: this.post,
     tags: this.tags,
     comments: [],
     pv: 0,
-    head: this.head
+    head: this.head,
+    reprint_info: {}
   }
   // 打开数据库
   mogondb.open(function (err, db) {
@@ -177,7 +178,7 @@ Post.edit = function (name, day, title, callback) {
   })
 }
 // 更新一篇文章及其相关信息
-Post.update = function (name, day, title, post, callback) {
+Post.update = function (name, day, title, post, tags, callback) {
   // 打开数据库
   mogondb.open(function (err, db) {
     if (err) {
@@ -195,7 +196,10 @@ Post.update = function (name, day, title, post, callback) {
         "time.day": day,
         title
       }, {
-        $set: {post}
+        $set: {
+          post,
+          tags
+        }
       }, function (err) {
         mogondb.close()
         if (err) {
@@ -218,20 +222,68 @@ Post.remove = function (name, day, title, callback) {
         mogondb.close()
         return callback(err)
       }
-      // 根据用户名、日期和标题查找并删除一篇文章
-      collection.remove({
+      // 查询要删除的文档
+      collection.findOne({
         name,
-        title,
-        "time.day": day
-      }, {
-        w: 1
-      }, function (err) {
-        mogondb.close()
+        "time.day": day,
+        title
+      }, (err, doc) => {
         if (err) {
+          mogondb.close()
           return callback(err)
         }
-        callback(null)
+        // 如果有 reprint_from，即该文章是转载来的，先保存下来 reprint_from
+        var reprint_from = doc.reprint_info.reprint_from || ""
+        if (reprint_from) {
+          // 更新源文章所在文档的reprint_to
+          collection.update({
+            name: reprint_from.name,
+            "time.day": reprint_from.day,
+            title: reprint_from.title
+          }, {
+            $pull: {
+              "reprint_info.reprint_to": {
+                name,
+                day,
+                title
+              }
+            }
+          }, err => {
+            if (err) {
+              mogondb.close()
+              return callback(err)
+            }
+          })
+        }
+        // 删除转载来的文章所在的文档
+        collection.remove({
+          name,
+          "time.day": day,
+          title
+        }, {
+          w: 1
+        }, err => {
+          mogondb.close()
+          if (err) {
+            return callback(err)
+          }
+          callback(null)
+        })
       })
+      // // 根据用户名、日期和标题查找并删除一篇文章
+      // collection.remove({
+      //   name,
+      //   title,
+      //   "time.day": day
+      // }, {
+      //   w: 1
+      // }, function (err) {
+      //   mogondb.close()
+      //   if (err) {
+      //     return callback(err)
+      //   }
+      //   callback(null)
+      // })
     })
   })
 }
@@ -344,6 +396,78 @@ Post.search = (keyword, callback) => {
           return callback(err)
         }
         callback(null, docs)
+      })
+    })
+  })
+}
+// 转载一篇文章
+Post.reprint = (reprint_from, reprint_to, callback) => {
+  mogondb.open((err, db) => {
+    if (err) {
+      return callback(err)
+    }
+    db.collection('posts', (err, collection) => {
+      if (err) {
+        mogondb.close()
+        return callback(err)
+      }
+      // 找到被转载的文章的原文档
+      collection.findOne({
+        name: reprint_from.name,
+        "time.day": reprint_from.day,
+        "title": reprint_from.title
+      }, (err, doc) => {
+        if (err) {
+          mogondb.close()
+          return callback(err)
+        }
+        var date = new Date()
+        var time = {
+          date: date,
+          year: date.getFullYear(),
+          month: date.getFullYear() + '-' + (date.getMonth() + 1),
+          day: date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate(),
+          minute: date.getFullYear() + '-' + (date.getMonth() + 1) + '-' + date.getDate() + ' ' + date.getHours() + ':' + (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes())
+        }
+        delete doc._id // 注意要删掉原来的 _id
+        doc.name = reprint_to.name
+        doc.head = reprint_to.head
+        doc.time = time
+        doc.title = (doc.title.search(/[转载]/) > -1 ? doc.title : "[转载]" + doc.title)
+        doc.comments = []
+        doc.reprint_info = {
+          reprint_from
+        }
+        doc.pv = 0
+        // 更新被转载的原文档的reprint_info内的reprint_to
+        collection.update({
+          name: reprint_from.name,
+          "time.day": reprint_from.day,
+          title: reprint_from.title
+        }, {
+          $push: {
+            "reprint_info.reprint_to": {
+              name: doc.name,
+              day: time.day,
+              title: doc.title
+            }
+          }
+        }, err => {
+          if (err) {
+            mogondb.close()
+            return callback(err)
+          }
+        })
+        // 将转载生成的副本修改后存入数据库，并返回存储后的文档
+        collection.insert(doc, {
+          safe: true
+        }, (err, post) => {
+          mogondb.close()
+          if (err) {
+            return callback(err)
+          }
+          callback(err, post.ops[0])
+        })
       })
     })
   })

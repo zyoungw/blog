@@ -1,10 +1,11 @@
 var mogondb = require('./db')
 markdown = require('markdown').markdown
 
-function Post ( name, title, post ) {
+function Post ( name, title, tags , post ) {
   this.name = name
   this.title = title
   this.post = post
+  this.tags = tags
 }
 
 module.exports = Post
@@ -24,6 +25,7 @@ Post.prototype.save = function (callback) {
     time: time,
     title: this.title.trim(), // 去除首尾空格，避免数据库查询不到title带空格的数据
     post: this.post,
+    tags: this.tags,
     comments: []
   }
   // 打开数据库
@@ -228,6 +230,59 @@ Post.getArchive = function (callback) {
       }
       // 返回只包含 name,time, tyitle 属性的文档组成的存档数组
       collection.find({}, {
+        name: 1,
+        time: 1,
+        title: 1
+      }).sort({
+        time: -1
+      }).toArray((err, docs) => {
+        mogondb.close()
+        if (err) {
+          return callback(err)
+        }
+        callback(null, docs)
+      })
+    })
+  })
+}
+// 返回所有的标签
+Post.getTags = function (callback) {
+  mogondb.open((err, db) => {
+    if (err) {
+      return callback(err)
+    }
+    db.collection('posts', (err, collection) => {
+      if (err) {
+        mogondb.close()
+        return callback(err)
+      }
+      // distinct 用来找出给定键的不同键值
+      collection.distinct("tags", (err, docs) => {
+        mogondb.close()
+        if (err) {
+          return callback(err)
+        }
+        callback(null, docs) // 这里的docs 回调的是tags的值
+      })
+    })
+  })
+}
+// 返回含有特定标签的额所有文章
+Post.getTag = (tag, callback) => {
+  mogondb.open((err, db) => {
+    if (err) {
+      return callback(err)
+    }
+    db.collection('posts', (err, collection) => {
+      if (err) {
+        mogondb.close()
+        return callback(err)
+      }
+      // 查询所有tags数组内涵tag的文档
+      // 并返回只返回name、time、title组成的数组
+      collection.find({
+        tags: tag
+      }, {
         name: 1,
         time: 1,
         title: 1

@@ -316,3 +316,33 @@ Post.getTag = (tag, callback) => {
     })
   })
 }
+// 返回通过标题关键字查询的所有文章信息
+Post.search = (keyword, callback) => {
+  mogondb.open((err, db) => {
+    if (err) {
+      return callback(err)
+    }
+    db.collection('posts', (err, collection) => {
+      if (err) {
+        mogondb.close()
+        return callback(err)
+      }
+      var pattern =  new RegExp(keyword, "i")
+      collection.find({
+        title: pattern
+      }, {
+        name: 1,
+        time: 1,
+        title: 1
+      }).sort({
+        time: -1
+      }).toArray((err, docs) => {
+        mogondb.close()
+        if (err) {
+          return callback(err)
+        }
+        callback(null, docs)
+      })
+    })
+  })
+}

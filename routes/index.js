@@ -157,6 +157,15 @@ module.exports = function (app) {
     req.flash('success', '文件上传成功')
     res.redirect('/upload')
   })
+  // 友情链接
+  app.get('/links', (req, res) => {
+    res.render('links', {
+      title: '友情链接',
+      user: req.session.user,
+      success: req.flash('success').toString(),
+      error: req.flash('error').toString()
+    })
+  })
   // 搜索
   app.get('/search', (req, res) => {
     Post.search(req.query.keyword, (err, posts) => {
@@ -334,6 +343,10 @@ module.exports = function (app) {
       req.flash('success', '删除成功')
       res.redirect('/')
     })
+  })
+  // 404
+  app.use((req, res) => {
+    res.render("404")
   })
   // 登录检测
   function checkLogin(req, res, next) {

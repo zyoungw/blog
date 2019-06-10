@@ -8,6 +8,7 @@ function Post ( name, title, tags , post ) {
   this.tags = tags
 }
 
+
 module.exports = Post
 
 Post.prototype.save = function (callback) {
